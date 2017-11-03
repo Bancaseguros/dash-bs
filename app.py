@@ -1,4 +1,5 @@
 import dash
+import dash_auth
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.figure_factory as ff
@@ -12,11 +13,11 @@ import plotly
 import os
 
 #--------------------------- APP AND SERVER CONFIG
-
+myvar = [['bancaseguros', '2017bancaseguros']]
 app = dash.Dash(__name__)
 server = app.server
 server.secret_key = os.environ.get('SECRET_KEY', 'my-secret-key')
-
+auth = dash_auth.BasicAuth(app, myvar)
 #---------------------------------------------------------
 
 #--------------------------- DATABASES IMPORTS AND ADJUSTMENTS
@@ -35,14 +36,14 @@ options_reg = oficinas['REGIONAL'].unique()
 options_sgro = ('ACCIDENTES_PERSONALES', 'DAVIDA', 'DESEMPLEO_FIJO', 'DESEMPLEO_HIPOTECARIO', 'DESEMPLEO_LIBRANZA', 'DESEMPLEO_TDC', 'DESEMPLEO_VEHICULO',
     'HOGAR', 'INCENDIO_TERREMOTO_REINV', 'PROTECCION_TARJETAS', 'RENTA_DIARIA', 'SOAT', 'TRANQUILIDAD_MUJER', 'VEHICULO', 'VIDA_DEUDORES_REINV')
 options_inter = base['TIPO_OPERACION'].unique()
-options_mes = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+options_mes = {1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'}
 
 #---------------------------------------------------------
 
 #--------------------------- APP LAYOUT (HTML + DCC)
 
 app.layout = html.Div(style = {'height': '100%', 'min-width': '100%', 'margin': '-8px'}, children =[
-    html.Div(style = {'height': '100%', 'background-color': 'rgb(38, 38, 28)', 'box-shadow': '4px 5px 9px -3px rgba(102,102,102,1)', 'white-space': 'nowrap', 'color': '#7f7f7f', 'font-family': 'Helvetica', 'font-size': '14'}, children = [
+    html.Div(style = {'height': '100%', 'background-color': '#111111', 'box-shadow': '4px 5px 9px -3px rgba(102,102,102,1)', 'white-space': 'nowrap', 'color': '#7f7f7f', 'font-family': 'Helvetica', 'font-size': '14'}, children = [
         html.Div(style = {'padding-bottom': '15px', 'overflow': 'visible'}, children = [
             html.Div(style = {'width': '22%', 'float': 'left', 'padding-left': '15px', 'padding-right': '15px'}, children = [
                 html.P(style = {'color': '#ffffff', 'font-family': 'Helvetica', 'font-size': '15'}, children = 'Seleccione regional:'),
@@ -68,7 +69,7 @@ app.layout = html.Div(style = {'height': '100%', 'min-width': '100%', 'margin': 
                 ]),
             html.Div(style = {'width': '70%', 'float': 'left', 'padding-left': '15px', 'padding-right': '15px'}, children = [
                 html.P(style = {'color': '#ffffff', 'font-family': 'Helvetica', 'font-size': '15'}, children = 'Seleccione un rango de fechas:'),
-                dcc.RangeSlider(id = 'mes-range', marks={i: 'Mes {}'.format(i) for i in range(1, 13)}, min=1, max=12, value=[6, 9])
+                dcc.RangeSlider(id = 'mes-range', marks = options_mes , min=1, max=12, value=[6, 9])
                 ])
             ]),
         html.Div(style = {'width': '95%', 'padding-bottom': '15px', 'padding-top': '2px', 'padding-left': '15px', 'padding-right': '15px', 'overflow': 'visible', 'clear':'both'}, children = [
@@ -117,6 +118,7 @@ app.layout = html.Div(style = {'height': '100%', 'min-width': '100%', 'margin': 
                 dcc.Graph(id = 'graph-6', config={'displayModeBar': False})
                 ])
             ]),
+        html.Br(),
         html.Br(),
         html.Div(style = { 'width': '100%', 'height': '100%', 'margin': '0px', 'overflow': 'hidden'}, children = [
             html.Div(style = { 'width': '80%', 'height': '100%', 'margin': 'auto'}, children = [
@@ -208,13 +210,15 @@ def set_display_children(selected_reg, selected_dpto, selected_ciud, selected_of
     graph1text = ''
 
     if selected_reg == 'TODAS':
-        graph1text = 'Participación de regionales (%)'
+        graph1text = 'Participación de Regionales'
     elif selected_dpto == 'TODAS':
-        graph1text = 'Participación por departamento (%)'
+        graph1text = 'Participación por Departamento'
     elif selected_ciud == 'TODAS':
-        graph1text = 'Participación por ciudad (%)'
+        graph1text = 'Participación por Ciudad'
     elif selected_ofic == 'TODAS':
-        graph1text = 'Participación por oficina (%)'
+        graph1text = 'Participación por Oficina'
+    else:
+        graph1text = 'Participación por Oficina'
 
     return graph1text
 
@@ -344,6 +348,11 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
 
     base_filtro = base_filtro[base_filtro['TIPO_OPERACION'].isin(selected_inter)]
 
+    base_filtro = base_filtro[base_filtro['REGIONAL'] != 'OTRA']
+    base_filtro = base_filtro[base_filtro['DEPARTAMENTO'] != 'OTRA']
+    base_filtro = base_filtro[base_filtro['CIUDAD'] != 'OTRA']
+    base_filtro = base_filtro[base_filtro['NOMBRE_OFICINA'] != 'OTRA']
+
     if selected_reg == 'TODAS':
         base_filtro = base_filtro[['REGIONAL', selected_sgro, crit_selected_sgro, val_selected_sgro]].groupby(['REGIONAL'], as_index = False).sum()
         base_filtro['labels'] = base_filtro['REGIONAL'].astype(str)
@@ -362,6 +371,7 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
         base_filtro = base_filtro[base_filtro['DEPARTAMENTO'] == selected_dpto]
         base_filtro = base_filtro[base_filtro['CIUDAD'] == selected_ciud]
         base_filtro['labels'] = base_filtro['NOMBRE_OFICINA']
+
 
     base_filtro['pen_sgro'] = base_filtro[selected_sgro]*100/base_filtro[crit_selected_sgro]
     base_filtro['sgro_TXT'] = base_filtro[selected_sgro].astype(str)
@@ -440,18 +450,20 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
     mode = 'markers',
     opacity = 0.6,
     marker = Marker(color = '#F46D43', size = base_filtro['size']*base_filtro['multip']),
-    visible = True
+    visible = True,
+    hoverinfo = 'text'
     )
 
     trace2 = Scatter(
-        x = base_filtro[crit_selected_sgro],
-        y = base_filtro['pen_sgro'],
-        text = base_filtro['VAL_sgro_TXT'],
-        name = '',
-        mode = 'markers',
-        opacity = 0.6,
-        marker = Marker(color = '#1A9850', size = base_filtro['size_val']*base_filtro['v_multip']),
-        visible = False
+    x = base_filtro[crit_selected_sgro],
+    y = base_filtro['pen_sgro'],
+    text = base_filtro['VAL_sgro_TXT'],
+    name = '',
+    mode = 'markers',
+    opacity = 0.6,
+    marker = Marker(color = '#1A9850', size = base_filtro['size_val']*base_filtro['v_multip']),
+    visible = False,
+    hoverinfo = 'text'
         )
 
     data = Data([trace1, trace2])
@@ -736,23 +748,24 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
     base_filtro['txt_pen_sgro'] = base_filtro['pen_sgro'].astype(str)
     base_filtro['txt_pen_sgro'] = 'Pen. ' + base_filtro['txt_pen_sgro'] + '%'
     base_filtro_g['txt_pen_sgro_g'] = base_filtro_g['pen_sgro'].astype(str)
-    base_filtro_g['txt_pen_sgro_g'] = 'Pen. ' + base_filtro_g['txt_pen_sgro_g'] + '%'
+    base_filtro_g['txt_pen_sgro_g'] = base_filtro_g['txt_pen_sgro_g'] + '%'
 
     trace1 = Scatter(
     x = base_filtro_g['MES'],
     y = base_filtro_g['pen_sgro'],
     name = 'Penetración',
     marker = {'color': '#0B877D', 'size': "5"},
-    fill = 'tonexty',
-    mode = 'markers+lines',
-    text = base_filtro_g['txt_pen_sgro_g']
+    mode = 'markers+lines+text',
+    textposition = 'top',
+    text = base_filtro_g['txt_pen_sgro_g'],
+    hoverinfo = 'none'
     )
 
     layout = Layout(
     title = '',
     titlefont = {'family': 'Helvetica', 'size': '16', 'color': '#7f7f7f'},
-    xaxis = {'title': ''},
-    yaxis= dict(rangemode = 'tozero', range = [0, base_filtro_g['pen_sgro'].max()*2], title='', showgrid=False, zeroline=False, showline=False, showticklabels = True),
+    xaxis = dict(title = ''),
+    yaxis= dict(rangemode = 'tozero', range = [0, base_filtro_g['pen_sgro'].max()*2], title='', showgrid=False, zeroline=False, showline=False, showticklabels = False),
     margin = {'l': 40, 'b': 50, 't': 0, 'r': 30},
     showlegend = False
     )
@@ -802,8 +815,7 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
     base_filtro = base_filtro.sort_values(selected_sgro, ascending = False)
     base_filtro = base_filtro.reset_index()
     annotation = np.round((base_filtro[selected_sgro]*100/base_filtro[selected_sgro].sum()), decimals = 1, out = None)
-    annotation = annotation.astype(str)
-    annotation = annotation + '%'
+    annotation = np.where(annotation >= 2.4, annotation.astype(str)+'%', '')
 
     color = {'ACTIVACION TDC': '#0B877D', 'APERTURAS PASIVO': '#126872', 'APROBACIONES CREDITOS': '#2D587B', 'DESEMBOLSOS CREDITOS': '#184169', 'OTRA': '#FFD351', 'PREAPROBADOS': '#121C25', 'SOLICITUDES': '#13314D', 'TRANSACCIONES CAJA': '#C9283E', 'TELEMERCADEO': 'rgb(69,117,180)'}
 
@@ -897,8 +909,7 @@ def update_figure(selected_reg, selected_dpto, selected_ciud, selected_ofic, sel
     base_filtro = base_filtro.sort_values(crit_sgro, ascending = False)
     base_filtro = base_filtro.reset_index()
     annotation = np.round((base_filtro[crit_sgro]*100/base_filtro[crit_sgro].sum()), decimals = 1, out = None)
-    annotation = annotation.astype(str)
-    annotation = annotation + '%'
+    annotation = np.where(annotation >= 2.4, annotation.astype(str)+'%', '')
 
     color = {'ACTIVACION TDC': '#0B877D', 'APERTURAS PASIVO': '#126872', 'APROBACIONES CREDITOS': '#2D587B', 'DESEMBOLSOS CREDITOS': '#184169', 'OTRA': '#FFD351', 'PREAPROBADOS': '#121C25', 'SOLICITUDES': '#13314D', 'TRANSACCIONES CAJA': '#C9283E', 'TELEMERCADEO': 'rgb(69,117,180)'}
 
@@ -1053,7 +1064,7 @@ def update_table(selected_reg, selected_dpto, selected_ciud, selected_ofic, sele
     base_filtro = base_filtro.reset_index(drop=True)
     base_filtro = base_filtro.reset_index()
     base_filtro['index'] = base_filtro['index'] + 1
-    base_filtro = base_filtro.sort_values('pen_sgro', ascending = False).tail(10)
+    base_filtro = base_filtro.sort_values('pen_sgro', ascending = True).head(10)
     base_filtro = base_filtro[['index', 'NOMBRE_OFICINA', 'CIUDAD', 'DEPARTAMENTO', selected_sgro, crit_sgro, 'txt_pen_sgro']]
     base_filtro.columns = ['Posición', 'Oficina', 'Ciudad', 'Departamento', 'Pólizas','Interacciones','Penetración']
     base_filtro
@@ -1078,6 +1089,6 @@ app.css.append_css({
 #--------------------------- RUN APP
 
 if __name__ == '__main__':
-    app.run_server(debug = False, port = 5000)
+    app.run_server(debug = False, port = 8000)
 
 #---------------------------------------------------------
