@@ -22,7 +22,8 @@ auth = dash_auth.BasicAuth(app, myvar)
 
 #--------------------------- DATABASES IMPORTS AND ADJUSTMENTS
 
-base = pd.read_csv('https://raw.githubusercontent.com/nicolasescobar0325/csv-tables/master/bancasegurosJunSep2.csv', delimiter = ',', encoding = 'latin-1')
+base = pd.read_csv('https://raw.githubusercontent.com/Bancaseguros/Dashboard-Seguimiento/master/bancasegurosJunSep2.csv', delimiter = ',', encoding = 'latin-1')
+#base = pd.read_csv('https://raw.githubusercontent.com/nicolasescobar0325/csv-tables/master/bancasegurosJunSep2.csv', delimiter = ',', encoding = 'latin-1')
 del base['Unnamed: 0']
 base['FECHA_APERTURA'] = pd.to_datetime(base['FECHA_APERTURA'])
 base['FECHA_APERTURA'] = pd.to_datetime(base['FECHA_APERTURA'])
